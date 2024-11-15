@@ -1,0 +1,137 @@
+let bola;
+let velocidadeBolaX, velocidadeBolaY;
+let larguraRaquete = 10, alturaRaquete = 80;
+let espessuraBarra = 5;
+let posicaoJogadorY, posicaoComputadorY;
+let pontosJogador = 0;
+let pontosComputador = 0;
+let fundo;
+let jogadorImg, computadorImg, bolaImg;
+let anguloBola = 0;
+let somColisao; // Variável para armazenar o som de colisão
+
+function preload() {
+    fundo = loadImage('assets/fundo2.png', 
+        () => console.log('Imagem de fundo carregada'), 
+        () => console.error('Erro ao carregar imagem de fundo')); 
+    jogadorImg = loadImage('assets/barra01.png', 
+        () => console.log('Imagem da raquete do jogador carregada'), 
+        () => console.error('Erro ao carregar imagem da raquete do jogador')); 
+    computadorImg = loadImage('assets/barra02.png', 
+        () => console.log('Imagem da raquete do computador carregada'), 
+        () => console.error('Erro ao carregar imagem da raquete do computador'));
+    bolaImg = loadImage('assets/bola.png', 
+        () => console.log('Imagem da bola carregada'), 
+        () => console.error('Erro ao carregar imagem da bola'));
+    somColisao = loadSound('assets/sounds/bounce.wav', 
+        () => console.log('Som de colisão carregado'), 
+        () => console.error('Erro ao carregar som de colisão')); // Carregar o som de colisão
+}
+
+function setup() {
+    createCanvas(800, 400);
+    resetarBola();
+    posicaoJogadorY = height / 2 - alturaRaquete / 2;
+    posicaoComputadorY = height / 2 - alturaRaquete / 2;
+}
+
+function draw() {
+    if (!fundo || !jogadorImg || !computadorImg || !bolaImg || !somColisao) {
+        console.error("Recursos não carregados corretamente!");
+        return;
+    }
+    imageMode(CORNER);
+    image(fundo, 0, 0, width, height);
+    desenharBarras();
+    desenharBola();
+    desenharRaquetes();
+    moverBola();
+    moverRaqueteComputador();
+    verificarColisoes();
+    posicaoJogadorY = constrain(mouseY - alturaRaquete / 2, 0, height - alturaRaquete);
+    textSize(32);
+    fill(255);
+    textAlign(CENTER, TOP);
+    text(pontosJogador, width / 4, 20);
+    text(pontosComputador, (width / 4) * 3, 20);
+}
+
+function resetarBola() {
+    bola = createVector(width / 2, height / 2);
+    velocidadeBolaX = random([-5, 5]);
+    velocidadeBolaY = random(-3, 3);
+}
+
+function desenharBarras() {
+    fill(color('#2b3fd6'));
+    noStroke();
+    rect(0, 0, width, espessuraBarra, 5);
+    rect(0, height - espessuraBarra, width, espessuraBarra, 5);
+}
+
+function desenharBola() {
+    anguloBola += velocidadeBolaX * 0.1;
+    push();
+    translate(bola.x, bola.y);
+    rotate(anguloBola);
+    imageMode(CENTER);
+    image(bolaImg, 0, 0, 20, 20);
+    pop();
+}
+
+function desenharRaquetes() {
+    image(jogadorImg, 30, posicaoJogadorY, larguraRaquete, alturaRaquete);
+    image(computadorImg, width - 40, posicaoComputadorY, larguraRaquete, alturaRaquete);
+}
+
+function moverBola() {
+    bola.x += velocidadeBolaX;
+    bola.y += velocidadeBolaY;
+    if (bola.y < espessuraBarra || bola.y > height - espessuraBarra) {
+        velocidadeBolaY *= -1;
+    }
+    if (bola.x < 0) {
+        pontosComputador++;
+        resetarBola();
+    }
+    if (bola.x > width) {
+        pontosJogador++;
+        resetarBola();
+    }
+}
+
+function verificarColisoes() {
+    if (bola.x - 10 < 40 && bola.y > posicaoJogadorY && bola.y < posicaoJogadorY + alturaRaquete) {
+        velocidadeBolaX *= -1;
+        alterarVelocidadeBola();
+        let diferencaY = bola.y - (posicaoJogadorY + alturaRaquete / 2);
+        velocidadeBolaY = diferencaY * 0.2;
+        bola.x = 40 + 10;
+        somColisao.play(); // Tocar som de colisão quando a bola bate na raquete do jogador
+    }
+
+    if (bola.x + 10 > width - 50 && bola.y > posicaoComputadorY && bola.y < posicaoComputadorY + alturaRaquete) {
+        velocidadeBolaX *= -1;
+        alterarVelocidadeBola();
+        let diferencaY = bola.y - (posicaoComputadorY + alturaRaquete / 2);
+        velocidadeBolaY = diferencaY * 0.2;
+        bola.x = width - 50 - 10;
+        somColisao.play(); // Tocar som de colisão quando a bola bate na raquete do computador
+    }
+}
+
+function moverRaqueteComputador() {
+    let velocidadeComputador = 3;
+    if (bola.y < posicaoComputadorY + alturaRaquete / 2 - 10) {
+        posicaoComputadorY -= velocidadeComputador;
+    } else if (bola.y > posicaoComputadorY + alturaRaquete / 2 + 10) {
+        posicaoComputadorY += velocidadeComputador;
+    }
+    posicaoComputadorY = constrain(posicaoComputadorY, 0, height - alturaRaquete);
+}
+
+function alterarVelocidadeBola() {
+    let incrementoVelocidade = random(0.5, 1.5);
+    velocidadeBolaX = velocidadeBolaX < 0 ? -incrementoVelocidade : incrementoVelocidade;
+    velocidadeBolaY = random(-3, 3);
+}
